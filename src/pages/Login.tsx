@@ -226,6 +226,15 @@ export default function Login() {
             </button>
           </form>
         )}
+        <p className="text-center text-sm mt-4">
+          Need an account?{" "}
+          <span
+            className="text-blue-600 hover:underline cursor-pointer"
+            onClick={() => navigate("/signup")}
+          >
+            Create one
+          </span>
+        </p>
       </div>
     </div>
   );

@@ -7,7 +7,7 @@ import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import DatePicker from "react-datepicker";  
+import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useNavigate } from "react-router-dom";
 
@@ -118,7 +118,7 @@ export default function Signup() {
             <DatePicker
               selected={dob}
               onChange={(date: Date | null) => setValue("dob", date as Date)}
-              dateFormat="dd MMMM yyyy" 
+              dateFormat="dd MMMM yyyy"
               maxDate={new Date()}
               showYearDropdown
               scrollableYearDropdown
@@ -179,6 +179,16 @@ export default function Signup() {
           <Button type="submit" full onClick={handleCombinedSubmit}>
             {showOtp ? "Sign Up" : "Get OTP"}
           </Button>
+
+          <p className="text-center text-sm mt-4">
+            Already have an account?{" "}
+            <span
+              className="text-blue-600 hover:underline cursor-pointer"
+              onClick={() => navigate("/login")}
+            >
+              Sign in
+            </span>
+          </p>
         </form>
       </div>
     </div>
