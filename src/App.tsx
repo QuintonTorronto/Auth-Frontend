@@ -2,7 +2,8 @@ import { Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
-import OtpVerify from "./pages/OtpVerify";
+import CompleteProfile from "./pages/CompleteProfile";
+import CompleteProfileRoute from "./routes/CompleteProfileRoute";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import Hero from "./pages/Hero";
@@ -13,6 +14,10 @@ import api from "./api/axios";
 
 export default function App() {
   const setAuthenticated = useAuth((state) => state.setAuthenticated);
+  const setRequiresProfileCompletion = useAuth(
+    (state) => state.setRequiresProfileCompletion
+  );
+
   const setLoading = useAuth((state) => state.setLoading);
   useEffect(() => {
     const checkAuth = async () => {
@@ -22,11 +27,25 @@ export default function App() {
       }, 10000);
 
       try {
-        await api.post("/auth/refresh", {}, { withCredentials: true });
+        const res = await api.post(
+          "/auth/refresh",
+          {},
+          { withCredentials: true }
+        );
+        const { accessToken } = res.data;
+
+        localStorage.setItem("accessToken", accessToken);
+
         setAuthenticated(true);
+
+        // Optional chaining: ensure boolean fallback
+        setRequiresProfileCompletion(
+          res.data.requiresProfileCompletion ?? false
+        );
       } catch (err) {
         console.error("Refresh error:", err.response?.data || err.message);
         setAuthenticated(false);
+        setRequiresProfileCompletion(false); // fallback if unauthenticated
       } finally {
         clearTimeout(timeout);
         setLoading(false);
@@ -42,8 +61,15 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Hero />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/otp" element={<OtpVerify />} />
         <Route path="/login" element={<Login />} />
+        <Route
+          path="/complete-profile"
+          element={
+            <CompleteProfileRoute>
+              <CompleteProfile />
+            </CompleteProfileRoute>
+          }
+        />
         <Route
           path="/dashboard"
           element={

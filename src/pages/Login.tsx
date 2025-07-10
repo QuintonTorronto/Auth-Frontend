@@ -8,6 +8,13 @@ import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
+import jwt_decode from "jwt-decode";
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 
 // Schemas
 const otpSchema = z.object({
@@ -95,6 +102,7 @@ export default function Login() {
         withCredentials: true,
       });
       toast.success("Login successful!");
+      localStorage.setItem("accessToken", res.data.accessToken);
       setAuthenticated(true);
       setTimeout(() => navigate("/dashboard"), 100);
     } catch (err: any) {
@@ -109,6 +117,7 @@ export default function Login() {
         withCredentials: true,
       });
       toast.success("Login successful!");
+      localStorage.setItem("accessToken", res.data.accessToken);
       setAuthenticated(true);
       setTimeout(() => navigate("/dashboard"), 100);
     } catch (err: any) {
@@ -130,6 +139,49 @@ export default function Login() {
     setMethod("otp");
     setShowOtpField(false);
   };
+
+  const handleGoogleCredential = async (credential: string) => {
+    try {
+      const res = await api.post(
+        "/auth/google/token",
+        { credential },
+        { withCredentials: true }
+      );
+      const { accessToken, requiresProfileCompletion } = res.data;
+
+      localStorage.setItem("accessToken", accessToken);
+
+      if (requiresProfileCompletion) {
+        localStorage.setItem("accessToken", accessToken);
+        navigate("/complete-profile");
+      } else {
+        navigate("/dashboard");
+      }
+
+      toast.success("Google sign-in successful");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Google login failed");
+    }
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (window.google && window.google.accounts?.id) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID!,
+          callback: (res: any) => handleGoogleCredential(res.credential),
+        });
+
+        window.google.accounts.id.renderButton(
+          document.getElementById("google-signin-button"),
+          { theme: "outline", size: "large", width: "300" }
+        );
+        clearInterval(interval); // prevent re-initialization
+      }
+    }, 100); // check every 100ms
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -226,6 +278,11 @@ export default function Login() {
             </button>
           </form>
         )}
+        <div className=" my-2 px-4 py-2">
+          <div className="w-full  flex justify-center">
+            <div id="google-signin-button" />
+          </div>
+        </div>
         <p className="text-center text-sm mt-4">
           Need an account?{" "}
           <span
