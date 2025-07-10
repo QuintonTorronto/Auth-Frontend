@@ -7,7 +7,8 @@ import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { motion, AnimatePresence } from "framer-motion";
+import DatePicker from "react-datepicker";  
+import "react-datepicker/dist/react-datepicker.css";
 import { useNavigate } from "react-router-dom";
 
 // Zod Schema for Signup
@@ -15,6 +16,7 @@ const signupSchema = z.object({
   name: z.string().min(2, "Name is too short"),
   email: z.string().email("Invalid email"),
   password: z.string().min(6, "Minimum 6 characters"),
+  dob: z.date({ required_error: "Date of birth is required" }),
 });
 
 type SignupData = z.infer<typeof signupSchema>;
@@ -28,13 +30,20 @@ type OtpData = z.infer<typeof otpSchema>;
 
 export default function Signup() {
   const [showOtp, setShowOtp] = useState(false);
+  const navigate = useNavigate();
+
   const {
     register,
     handleSubmit,
+    setValue,
     getValues,
     formState: { errors },
+    watch,
   } = useForm<SignupData>({
     resolver: zodResolver(signupSchema),
+    defaultValues: {
+      dob: undefined,
+    },
   });
 
   const {
@@ -45,11 +54,14 @@ export default function Signup() {
     resolver: zodResolver(otpSchema),
   });
 
-  const navigate = useNavigate();
+  const dob = watch("dob");
 
   const onGetOtp = async (data: SignupData) => {
     try {
-      await api.post("/auth/signup", data);
+      await api.post("/auth/signup", {
+        ...data,
+        dob: data.dob.toISOString().split("T")[0], // format YYYY-MM-DD
+      });
       toast.success("OTP sent to your email!");
       setShowOtp(true);
     } catch (err: any) {
@@ -97,6 +109,28 @@ export default function Signup() {
             {...register("name")}
             error={errors.name?.message}
           />
+
+          {/* Date of Birth Picker */}
+          <div className="flex flex-col space-y-1">
+            <label className="text-sm font-medium text-gray-700">
+              Date of Birth
+            </label>
+            <DatePicker
+              selected={dob}
+              onChange={(date: Date | null) => setValue("dob", date as Date)}
+              dateFormat="dd MMMM yyyy" 
+              maxDate={new Date()}
+              showYearDropdown
+              scrollableYearDropdown
+              yearDropdownItemNumber={100}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-amber-400 focus:outline-none focus:ring-2"
+              placeholderText="select DOB"
+            />
+            {errors.dob && (
+              <p className="text-red-500 text-sm">{errors.dob.message}</p>
+            )}
+          </div>
+
           <Input
             label="Email"
             type="email"
@@ -110,6 +144,7 @@ export default function Signup() {
             error={errors.password?.message}
           />
 
+          {/* OTP Section */}
           {showOtp && (
             <div>
               <label
