@@ -8,6 +8,7 @@ import Button from "../components/ui/Button";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 // Zod Schema for Signup
 const signupSchema = z.object({
@@ -26,8 +27,7 @@ const otpSchema = z.object({
 type OtpData = z.infer<typeof otpSchema>;
 
 export default function Signup() {
-  const [step, setStep] = useState<"form" | "otp">("form");
-
+  const [showOtp, setShowOtp] = useState(false);
   const {
     register,
     handleSubmit,
@@ -45,32 +45,31 @@ export default function Signup() {
     resolver: zodResolver(otpSchema),
   });
 
-  // Submit Signup Form
-  const onSubmit = async (data: SignupData) => {
+  const navigate = useNavigate();
+
+  const onGetOtp = async (data: SignupData) => {
     try {
       await api.post("/auth/signup", data);
       toast.success("OTP sent to your email!");
-      setStep("otp");
+      setShowOtp(true);
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Signup failed");
     }
   };
 
-  // Submit OTP
-  const onOtpSubmit = async (data: OtpData) => {
+  const onOtpSubmit = async (otpData: OtpData) => {
     try {
       await api.post("/auth/verify-otp", {
         email: getValues("email"),
-        otp: data.otp,
+        otp: otpData.otp,
       });
-      toast.success("OTP verified successfully!");
-      // TODO: Redirect to dashboard
+      toast.success("Account created successfully!");
+      navigate("/login");
     } catch (err: any) {
       toast.error("Invalid or expired OTP");
     }
   };
 
-  // Resend OTP
   const resendOtp = async () => {
     try {
       await api.post("/auth/resend-otp", { email: getValues("email") });
@@ -80,79 +79,72 @@ export default function Signup() {
     }
   };
 
+  const handleCombinedSubmit = async () => {
+    if (!showOtp) {
+      handleSubmit(onGetOtp)();
+    } else {
+      handleSubmitOtp(onOtpSubmit)();
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="bg-white shadow-lg rounded-2xl p-8 max-w-md w-full">
-        <AnimatePresence mode="wait">
-          {step === "form" && (
-            <motion.div
-              key="form"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <h1 className="text-2xl font-semibold mb-6">Create Account</h1>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <Input
-                  label="Name"
-                  {...register("name")}
-                  error={errors.name?.message}
-                />
-                <Input
-                  label="Email"
-                  type="email"
-                  {...register("email")}
-                  error={errors.email?.message}
-                />
-                <Input
-                  label="Password"
-                  type="password"
-                  {...register("password")}
-                  error={errors.password?.message}
-                />
-                <Button type="submit" full>
-                  Sign Up
-                </Button>
-              </form>
-            </motion.div>
-          )}
+        <h1 className="text-2xl font-semibold mb-6">Create Account</h1>
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+          <Input
+            label="Name"
+            {...register("name")}
+            error={errors.name?.message}
+          />
+          <Input
+            label="Email"
+            type="email"
+            {...register("email")}
+            error={errors.email?.message}
+          />
+          <Input
+            label="Password"
+            type="password"
+            {...register("password")}
+            error={errors.password?.message}
+          />
 
-          {step === "otp" && (
-            <motion.div
-              key="otp"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <h2 className="text-xl font-medium mb-4">Verify OTP</h2>
-              <p className="text-gray-500 text-sm mb-4">
-                We’ve sent a 6-digit OTP to your email.
-              </p>
-              <form
-                onSubmit={handleSubmitOtp(onOtpSubmit)}
-                className="space-y-4"
+          {showOtp && (
+            <div>
+              <label
+                htmlFor="otp"
+                className="block text-gray-700 font-medium mb-1"
               >
-                <Input
-                  label="Enter OTP"
-                  {...registerOtp("otp")}
-                  error={otpErrors.otp?.message}
-                />
-                <Button type="submit" full>
-                  Verify
-                </Button>
-              </form>
+                OTP Code
+              </label>
+              <input
+                type="text"
+                id="otp"
+                placeholder="Enter OTP"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-amber-400 focus:outline-none focus:ring-2"
+                {...registerOtp("otp")}
+              />
+              {otpErrors.otp && (
+                <p className="text-red-500 text-sm">{otpErrors.otp.message}</p>
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                OTP sent to {getValues("email")}
+              </p>
               <button
                 type="button"
+                className="text-sm text-blue-600 mt-2 hover:underline"
                 onClick={resendOtp}
-                className="text-blue-600 text-sm hover:underline mt-4"
               >
                 Resend OTP
               </button>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
+
+          <Button type="submit" full onClick={handleCombinedSubmit}>
+            {showOtp ? "Sign Up" : "Get OTP"}
+          </Button>
+        </form>
       </div>
     </div>
   );

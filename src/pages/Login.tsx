@@ -1,5 +1,4 @@
-// src/pages/Login.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,86 +9,126 @@ import Button from "../components/ui/Button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 
-const loginSchema = z.object({
-  email: z.string().email("Invalid email"),
-  password: z.string().min(6, "Password too short"),
-  keepSignedIn: z.boolean().optional(),
-});
-
-type LoginData = z.infer<typeof loginSchema>;
-
+// Schemas
 const otpSchema = z.object({
   email: z.string().email("Invalid email"),
   otp: z.string().length(6, "OTP must be 6 digits"),
 });
 
-type OtpData = z.infer<typeof otpSchema>;
+const passwordSchema = z.object({
+  email: z.string().email("Invalid email"),
+  password: z.string().min(6, "Password too short"),
+});
 
 export default function Login() {
-  const [method, setMethod] = useState<"password" | "otp">("password");
+  const [method, setMethod] = useState<"otp" | "password">("otp");
   const [showOtpField, setShowOtpField] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<LoginData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { keepSignedIn: true },
-  });
+  const [emailValue, setEmailValue] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const {
     register: registerOtp,
     handleSubmit: handleOtpSubmit,
+    setValue: setOtpValue,
+    watch: watchOtp,
     formState: { errors: otpErrors },
-  } = useForm<OtpData>({
+  } = useForm({
     resolver: zodResolver(otpSchema),
+    defaultValues: { email: emailValue },
   });
+
+  const {
+    register: registerPwd,
+    handleSubmit: handlePwdSubmit,
+    setValue: setPwdValue,
+    formState: { errors: pwdErrors },
+  } = useForm({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: { email: emailValue },
+  });
+
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setResendCooldown(resendCooldown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
 
   const navigate = useNavigate();
   const setAuthenticated = useAuth((state) => state.setAuthenticated);
 
-  const onLoginSubmit = async (data: LoginData) => {
-    try {
-      const res = await api.post("/auth/login", data, {
-        withCredentials: true,
-      });
-      if (res.status === 200 || res.status === 204) {
-        toast.success("Login successful!");
-        setAuthenticated(true);
-        setTimeout(() => navigate("/dashboard"), 100);
-      } else {
-        toast.error("Invalid credentials");
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Login failed");
-    }
-  };
-
+  // --- OTP FLOW ---
   const onOtpRequest = async () => {
-    const email = watch("email");
+    const email = watchOtp("email");
     if (!email) return toast.error("Enter your email first");
 
     try {
       await api.post("/auth/send-otp-login", { email });
       setShowOtpField(true);
+      setResendCooldown(30);
+      setEmailValue(email);
+      setOtpValue("email", email);
+      setPwdValue("email", email);
       toast.success("OTP sent to email");
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to send OTP");
     }
   };
 
-  const onOtpSubmit = async (data: OtpData) => {
+  const onResendOtp = async () => {
+    if (resendCooldown > 0) return;
+    const email = watchOtp("email");
     try {
-      const res = await api.post("/auth/verify-otp-login", data);
-      toast.success("OTP login successful");
-      localStorage.setItem("token", res.data.accessToken);
-      window.location.href = "/dashboard";
+      await api.post("/auth/send-otp-login", { email });
+      toast.info("OTP resent to email");
+      setResendCooldown(30); // reset cooldown
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Resend failed");
+    }
+  };
+
+  const onOtpSubmit = async (data: any) => {
+    try {
+      const res = await api.post("/auth/verify-otp-login", data, {
+        withCredentials: true,
+      });
+      toast.success("Login successful!");
+      setAuthenticated(true);
+      setTimeout(() => navigate("/dashboard"), 100);
     } catch (err: any) {
       toast.error(err.response?.data?.message || "OTP login failed");
     }
+  };
+
+  // --- PASSWORD FLOW ---
+  const onPwdSubmit = async (data: any) => {
+    try {
+      const res = await api.post("/auth/login", data, {
+        withCredentials: true,
+      });
+      toast.success("Login successful!");
+      setAuthenticated(true);
+      setTimeout(() => navigate("/dashboard"), 100);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Login failed");
+    }
+  };
+
+  // --- Toggle ---
+  const switchToPassword = () => {
+    const currentEmail = watchOtp("email") || emailValue;
+    setEmailValue(currentEmail);
+    setPwdValue("email", currentEmail);
+    setMethod("password");
+    setShowOtpField(false);
+  };
+
+  const switchToOtp = () => {
+    setOtpValue("email", emailValue);
+    setMethod("otp");
+    setShowOtpField(false);
   };
 
   return (
@@ -97,65 +136,93 @@ export default function Login() {
       <div className="bg-white shadow-lg rounded-2xl p-8 max-w-md w-full">
         <h1 className="text-2xl font-semibold mb-6">Sign In</h1>
 
-        {method === "password" ? (
-          <form onSubmit={handleSubmit(onLoginSubmit)} className="space-y-4">
-            <Input
-              label="Email"
-              type="email"
-              {...register("email")}
-              error={errors.email?.message}
-            />
-            <Input
-              label="Password"
-              type="password"
-              {...register("password")}
-              error={errors.password?.message}
-            />
-            <div className="flex items-center gap-2">
-              <input type="checkbox" {...register("keepSignedIn")} />
-              <label className="text-sm">Keep me signed in</label>
-            </div>
-            <Button type="submit" full>
-              Sign In
-            </Button>
-            <button
-              type="button"
-              className="text-blue-600 text-sm hover:underline"
-              onClick={() => setMethod("otp")}
-            >
-              Or sign in with OTP
-            </button>
-          </form>
-        ) : (
+        {method === "otp" && (
           <form onSubmit={handleOtpSubmit(onOtpSubmit)} className="space-y-4">
             <Input
               label="Email"
               type="email"
               {...registerOtp("email")}
               error={otpErrors.email?.message}
+              onChange={(e) => {
+                setOtpValue("email", e.target.value);
+                setEmailValue(e.target.value);
+              }}
             />
+
             {showOtpField && (
-              <Input
-                label="OTP"
-                {...registerOtp("otp")}
-                error={otpErrors.otp?.message}
-              />
+              <>
+                <Input
+                  label="OTP"
+                  type="text"
+                  {...registerOtp("otp")}
+                  error={otpErrors.otp?.message}
+                />
+                <button
+                  type="button"
+                  onClick={onResendOtp}
+                  className={`text-sm ${
+                    resendCooldown > 0
+                      ? "text-gray-400"
+                      : "text-blue-500 hover:underline"
+                  }`}
+                  disabled={resendCooldown > 0}
+                >
+                  {resendCooldown > 0
+                    ? `Resend in ${resendCooldown}s`
+                    : "Resend OTP"}
+                </button>
+              </>
             )}
+
             {!showOtpField ? (
               <Button type="button" onClick={onOtpRequest} full>
-                Send OTP
+                Get OTP
               </Button>
             ) : (
               <Button type="submit" full>
-                Verify OTP
+                Sign In
               </Button>
             )}
+
             <button
               type="button"
-              className="text-sm text-gray-500 hover:underline"
-              onClick={() => setMethod("password")}
+              className="text-blue-600 text-sm hover:underline mt-2"
+              onClick={switchToPassword}
             >
-              Back to password login
+              Sign in with Password
+            </button>
+          </form>
+        )}
+
+        {method === "password" && (
+          <form onSubmit={handlePwdSubmit(onPwdSubmit)} className="space-y-4">
+            <Input
+              label="Email"
+              type="email"
+              {...registerPwd("email")}
+              error={pwdErrors.email?.message}
+              onChange={(e) => {
+                setPwdValue("email", e.target.value);
+                setEmailValue(e.target.value);
+              }}
+            />
+            <Input
+              label="Password"
+              type="password"
+              {...registerPwd("password")}
+              error={pwdErrors.password?.message}
+            />
+
+            <Button type="submit" full>
+              Sign In
+            </Button>
+
+            <button
+              type="button"
+              className="text-sm text-gray-500 hover:underline mt-2"
+              onClick={switchToOtp}
+            >
+              Use OTP to sign in
             </button>
           </form>
         )}
