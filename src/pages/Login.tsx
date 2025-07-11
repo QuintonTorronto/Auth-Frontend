@@ -9,6 +9,8 @@ import Button from "../components/ui/Button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import jwt_decode from "jwt-decode";
+import banner from "../assets/Banner.jpg";
+import Logo from "../assets/logo-HD.svg?react";
 
 declare global {
   interface Window {
@@ -65,6 +67,9 @@ export default function Login() {
 
   const navigate = useNavigate();
   const setAuthenticated = useAuth((state) => state.setAuthenticated);
+  const setRequiresProfileCompletion = useAuth(
+    (state) => state.setRequiresProfileCompletion
+  );
 
   // --- OTP FLOW ---
   const onOtpRequest = async () => {
@@ -151,6 +156,9 @@ export default function Login() {
 
       localStorage.setItem("accessToken", accessToken);
 
+      setAuthenticated(true);
+      setRequiresProfileCompletion(requiresProfileCompletion);
+
       if (requiresProfileCompletion) {
         localStorage.setItem("accessToken", accessToken);
         navigate("/complete-profile");
@@ -184,114 +192,144 @@ export default function Login() {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="bg-white shadow-lg rounded-2xl p-8 max-w-md w-full">
-        <h1 className="text-2xl font-semibold mb-6">Sign In</h1>
+    <div className="h-screen bg-gray-50">
+      <div className="flex justify-center md:justify-start px-4 pt-6 md:px-10 md:pt-4">
+        <Logo className="h-10 w-auto" />
+      </div>
+      <div className="flex flex-col bg-gray-50 md:flex-row mt-5 overflow-hidden">
+        {/* Left: Login Form (scrollable) */}
+        <div className="w-full md:w-1/2 overflow-y-auto px-4 py-10 bg-gray-50 flex justify-center items-center">
+          <div className="w-full max-w-md bg-white shadow-lg rounded-2xl p-6 sm:p-8">
+            <h1 className="text-2xl font-semibold mb-2 text-gray-800">
+              Sign In
+            </h1>
+            <h2 className="text-sm font-normal mb-6 text-gray-600">
+              Please login to continue to your account.
+            </h2>
 
-        {method === "otp" && (
-          <form onSubmit={handleOtpSubmit(onOtpSubmit)} className="space-y-4">
-            <Input
-              label="Email"
-              type="email"
-              {...registerOtp("email")}
-              error={otpErrors.email?.message}
-              onChange={(e) => {
-                setOtpValue("email", e.target.value);
-                setEmailValue(e.target.value);
-              }}
-            />
-
-            {showOtpField && (
-              <>
+            {/* OTP Login */}
+            {method === "otp" && (
+              <form
+                onSubmit={handleOtpSubmit(onOtpSubmit)}
+                className="space-y-4"
+              >
                 <Input
-                  label="OTP"
-                  type="text"
-                  {...registerOtp("otp")}
-                  error={otpErrors.otp?.message}
+                  label="Email"
+                  type="email"
+                  {...registerOtp("email")}
+                  error={otpErrors.email?.message}
+                  onChange={(e) => {
+                    setOtpValue("email", e.target.value);
+                    setEmailValue(e.target.value);
+                  }}
                 />
+                {showOtpField && (
+                  <>
+                    <Input
+                      label="OTP"
+                      type="text"
+                      {...registerOtp("otp")}
+                      error={otpErrors.otp?.message}
+                    />
+                    <button
+                      type="button"
+                      onClick={onResendOtp}
+                      className={`text-sm ${
+                        resendCooldown > 0
+                          ? "text-gray-400"
+                          : "text-blue-500 hover:underline"
+                      }`}
+                      disabled={resendCooldown > 0}
+                    >
+                      {resendCooldown > 0
+                        ? `Resend in ${resendCooldown}s`
+                        : "Resend OTP"}
+                    </button>
+                  </>
+                )}
+
+                {!showOtpField ? (
+                  <Button type="button" onClick={onOtpRequest} full>
+                    Get OTP
+                  </Button>
+                ) : (
+                  <Button type="submit" full>
+                    Sign In
+                  </Button>
+                )}
+
                 <button
                   type="button"
-                  onClick={onResendOtp}
-                  className={`text-sm ${
-                    resendCooldown > 0
-                      ? "text-gray-400"
-                      : "text-blue-500 hover:underline"
-                  }`}
-                  disabled={resendCooldown > 0}
+                  className="text-blue-600 text-sm hover:underline mt-2"
+                  onClick={switchToPassword}
                 >
-                  {resendCooldown > 0
-                    ? `Resend in ${resendCooldown}s`
-                    : "Resend OTP"}
+                  Sign in with Password
                 </button>
-              </>
+              </form>
             )}
 
-            {!showOtpField ? (
-              <Button type="button" onClick={onOtpRequest} full>
-                Get OTP
-              </Button>
-            ) : (
-              <Button type="submit" full>
-                Sign In
-              </Button>
+            {/* Password Login */}
+            {method === "password" && (
+              <form
+                onSubmit={handlePwdSubmit(onPwdSubmit)}
+                className="space-y-4"
+              >
+                <Input
+                  label="Email"
+                  type="email"
+                  {...registerPwd("email")}
+                  error={pwdErrors.email?.message}
+                  onChange={(e) => {
+                    setPwdValue("email", e.target.value);
+                    setEmailValue(e.target.value);
+                  }}
+                />
+                <Input
+                  label="Password"
+                  type="password"
+                  {...registerPwd("password")}
+                  error={pwdErrors.password?.message}
+                />
+                <Button type="submit" full>
+                  Sign In
+                </Button>
+                <button
+                  type="button"
+                  className="text-sm text-gray-500 hover:underline mt-2"
+                  onClick={switchToOtp}
+                >
+                  Use OTP to sign in
+                </button>
+              </form>
             )}
 
-            <button
-              type="button"
-              className="text-blue-600 text-sm hover:underline mt-2"
-              onClick={switchToPassword}
-            >
-              Sign in with Password
-            </button>
-          </form>
-        )}
+            {/* Google Sign In */}
+            <div className="my-4 px-4 py-2">
+              <div className="w-full flex justify-center">
+                <div id="google-signin-button" />
+              </div>
+            </div>
 
-        {method === "password" && (
-          <form onSubmit={handlePwdSubmit(onPwdSubmit)} className="space-y-4">
-            <Input
-              label="Email"
-              type="email"
-              {...registerPwd("email")}
-              error={pwdErrors.email?.message}
-              onChange={(e) => {
-                setPwdValue("email", e.target.value);
-                setEmailValue(e.target.value);
-              }}
-            />
-            <Input
-              label="Password"
-              type="password"
-              {...registerPwd("password")}
-              error={pwdErrors.password?.message}
-            />
-
-            <Button type="submit" full>
-              Sign In
-            </Button>
-
-            <button
-              type="button"
-              className="text-sm text-gray-500 hover:underline mt-2"
-              onClick={switchToOtp}
-            >
-              Use OTP to sign in
-            </button>
-          </form>
-        )}
-        <div className=" my-2 px-4 py-2">
-          <div className="w-full  flex justify-center">
-            <div id="google-signin-button" />
+            <p className="text-center text-sm mt-4">
+              Need an account?{" "}
+              <span
+                className="text-blue-600 hover:underline cursor-pointer"
+                onClick={() => navigate("/signup")}
+              >
+                Create one
+              </span>
+            </p>
           </div>
         </div>
-        <p className="text-center text-sm mt-4">
-          Need an account?{" "}
-          <span
-            className="text-blue-600 hover:underline cursor-pointer"
-            onClick={() => navigate("/signup")}
-          >
-            Create one
-          </span>
-        </p>
+
+        {/* Right: Banner for Desktop */}
+        <div className="hidden md:block md:w-1/2 fixed right-0 top-0 h-screen z-0">
+          <img
+            src={banner}
+            alt="Login Banner"
+            className="w-full h-full object-cover"
+          />
+        </div>
       </div>
     </div>
   );
