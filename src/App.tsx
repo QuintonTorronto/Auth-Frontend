@@ -1,23 +1,24 @@
 import { Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
+import { useAuth } from "./auth/useAuth";
+import api from "./api/axios";
+import Hero from "./pages/Hero";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import CompleteProfile from "./pages/CompleteProfile";
 import CompleteProfileRoute from "./routes/CompleteProfileRoute";
-import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./routes/ProtectedRoute";
-import Hero from "./pages/Hero";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import Dashboard from "./pages/Dashboard";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useAuth } from "./auth/useAuth";
-import api from "./api/axios";
 
 export default function App() {
   const setAuthenticated = useAuth((state) => state.setAuthenticated);
   const setRequiresProfileCompletion = useAuth(
     (state) => state.setRequiresProfileCompletion
   );
-
   const setLoading = useAuth((state) => state.setLoading);
   useEffect(() => {
     const checkAuth = async () => {
@@ -38,7 +39,6 @@ export default function App() {
 
         setAuthenticated(true);
 
-        // Optional chaining: ensure boolean fallback
         setRequiresProfileCompletion(
           res.data.requiresProfileCompletion ?? false
         );
@@ -62,6 +62,8 @@ export default function App() {
         <Route path="/" element={<Hero />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route
           path="/complete-profile"
           element={

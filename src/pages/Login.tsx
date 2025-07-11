@@ -11,6 +11,7 @@ import { useAuth } from "../auth/useAuth";
 import jwt_decode from "jwt-decode";
 import banner from "../assets/Banner.jpg";
 import Logo from "../assets/logo-HD.svg?react";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 
 declare global {
   interface Window {
@@ -34,6 +35,7 @@ export default function Login() {
   const [showOtpField, setShowOtpField] = useState(false);
   const [emailValue, setEmailValue] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register: registerOtp,
@@ -260,7 +262,7 @@ export default function Login() {
 
                 <button
                   type="button"
-                  className="text-blue-600 text-sm hover:underline mt-2"
+                  className="text-gray-500 text-sm hover:underline hover:text-blue-600 mt-2"
                   onClick={switchToPassword}
                 >
                   Sign in with Password
@@ -284,22 +286,45 @@ export default function Login() {
                     setEmailValue(e.target.value);
                   }}
                 />
-                <Input
-                  label="Password"
-                  type="password"
-                  {...registerPwd("password")}
-                  error={pwdErrors.password?.message}
-                />
+                <div className="relative">
+                  <Input
+                    label="Password"
+                    type={showPassword ? "text" : "password"}
+                    {...registerPwd("password")}
+                    error={pwdErrors.password?.message}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-9 text-gray-500 hover:text-gray-700"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <FiEyeOff size={20} />
+                    ) : (
+                      <FiEye size={20} />
+                    )}
+                  </button>
+                </div>
                 <Button type="submit" full>
                   Sign In
                 </Button>
-                <button
-                  type="button"
-                  className="text-sm text-gray-500 hover:underline mt-2"
-                  onClick={switchToOtp}
-                >
-                  Use OTP to sign in
-                </button>
+                <div className="flex justify-between items-center text-sm mt-2 px-1">
+                  <button
+                    type="button"
+                    onClick={switchToOtp}
+                    className="text-gray-500 hover:underline hover:text-blue-600"
+                  >
+                    Use OTP to sign in
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/forgot-password")}
+                    className="text-blue-600 hover:underline"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
               </form>
             )}
 
