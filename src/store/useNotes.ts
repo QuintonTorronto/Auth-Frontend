@@ -1,8 +1,14 @@
 import { create } from "zustand";
-import api from "../api/axios";
-import type { Note } from "../types/note";
-import { toast } from "react-toastify";
 import axios from "axios";
+import api from "../api/axios";
+import { toast } from "react-toastify";
+
+interface Note {
+  _id: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface NotesState {
   notes: Note[];
@@ -22,48 +28,52 @@ export const useNotes = create<NotesState>((set) => ({
   fetchNotes: async () => {
     set({ loading: true, error: null });
     try {
-      const res = await api.get<Note[]>("/notes");
+      const res = await api.get("/notes");
       set({ notes: res.data });
     } catch (err) {
-      const error = err as axios.AxiosError;
-      toast.error(error.response?.data?.message || "Failed to fetch notes");
-      set({ error: error.message || "Unknown error" });
+      if (axios.isAxiosError(err)) {
+        toast.error(err.response?.data?.message || "Failed to fetch notes");
+        set({ error: err.message });
+      }
     } finally {
       set({ loading: false });
     }
   },
 
-  addNote: async (content: string) => {
+  addNote: async (content) => {
     try {
-      const res = await api.post<Note>("/notes", { content });
+      const res = await api.post("/notes", { content });
       set((state) => ({ notes: [res.data, ...state.notes] }));
     } catch (err) {
-      const error = err as axios.AxiosError;
-      toast.error(error.response?.data?.message || "Failed to add note");
+      if (axios.isAxiosError(err)) {
+        toast.error(err.response?.data?.message || "Failed to add note");
+      }
     }
   },
 
-  updateNote: async (id: string, content: string) => {
+  updateNote: async (id, content) => {
     try {
-      const res = await api.patch<Note>(`/notes/${id}`, { content });
+      const res = await api.patch(`/notes/${id}`, { content });
       set((state) => ({
         notes: state.notes.map((n) => (n._id === id ? res.data : n)),
       }));
     } catch (err) {
-      const error = err as axios.AxiosError;
-      toast.error(error.response?.data?.message || "Failed to update note");
+      if (axios.isAxiosError(err)) {
+        toast.error(err.response?.data?.message || "Failed to update note");
+      }
     }
   },
 
-  deleteNote: async (id: string) => {
+  deleteNote: async (id) => {
     try {
       await api.delete(`/notes/${id}`);
       set((state) => ({
         notes: state.notes.filter((n) => n._id !== id),
       }));
     } catch (err) {
-      const error = err as axios.AxiosError;
-      toast.error(error.response?.data?.message || "Failed to delete note");
+      if (axios.isAxiosError(err)) {
+        toast.error(err.response?.data?.message || "Failed to delete note");
+      }
     }
   },
 }));

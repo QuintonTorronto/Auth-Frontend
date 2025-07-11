@@ -9,11 +9,11 @@ import api from "../api/axios";
 import Header from "../components/ui/layout/Header";
 import WelcomeCard from "../components/ui/layout/WelcomeCard";
 import type { Note } from "../types/note";
+import type { ReactElement } from "react";
 
-export default function Dashboard() {
+export default function Dashboard(): ReactElement {
   const { name, email, setUser } = useUser();
   const [showEditor, setShowEditor] = useState(false);
-
   const { notes, fetchNotes, addNote, loading, error } = useNotes();
 
   useEffect(() => {
@@ -21,14 +21,15 @@ export default function Dashboard() {
       try {
         const res = await api.get("/auth/me");
         setUser(res.data.name, res.data.email);
-      } catch (err: any) {
+      } catch (err) {
+        const error = err as { message?: string };
         toast.error("Failed to load user info");
-        console.error(err.message);
+        console.error(error?.message || "Unknown error");
       }
     };
     getUser();
     fetchNotes();
-  }, []);
+  }, [fetchNotes, setUser]);
 
   const handleAddNote = async (content: string) => {
     await addNote(content);
@@ -43,7 +44,7 @@ export default function Dashboard() {
     toast.info(`Deleting note: ${id}`);
   };
 
-  let content: JSX.Element;
+  let content: ReactElement;
 
   if (loading) {
     content = (
