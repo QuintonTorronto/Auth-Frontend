@@ -14,7 +14,9 @@ import type { ReactElement } from "react";
 export default function Dashboard(): ReactElement {
   const { name, email, setUser } = useUser();
   const [showEditor, setShowEditor] = useState(false);
-  const { notes, fetchNotes, addNote, loading, error } = useNotes();
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const { notes, fetchNotes, addNote, updateNote, deleteNote, loading, error } =
+    useNotes();
 
   useEffect(() => {
     const getUser = async () => {
@@ -24,24 +26,37 @@ export default function Dashboard(): ReactElement {
       } catch (err) {
         const error = err as { message?: string };
         toast.error("Failed to load user info");
-        console.error(error?.message || "Unknown error");
+        console.error(error.message || "Unknown error");
       }
     };
+
     getUser();
     fetchNotes();
   }, [fetchNotes, setUser]);
 
-  const handleAddNote = async (content: string) => {
-    await addNote(content);
+  const handleAddOrUpdateNote = async (content: string) => {
+    if (editingNote) {
+      await updateNote(editingNote._id, content);
+      toast.success("Note updated");
+      setEditingNote(null);
+    } else {
+      await addNote(content);
+      toast.success("Note added");
+    }
     setShowEditor(false);
   };
 
   const handleEditNote = (note: Note) => {
-    toast.info(`Editing note: ${note.content}`);
+    setEditingNote(note);
+    setShowEditor(true);
   };
 
-  const handleDeleteNote = (id: string) => {
-    toast.info(`Deleting note: ${id}`);
+  const handleDeleteNote = async (id: string) => {
+    const confirmDelete = confirm("Are you sure you want to delete this note?");
+    if (confirmDelete) {
+      await deleteNote(id);
+      toast.success("Note deleted");
+    }
   };
 
   let content: ReactElement;
@@ -77,12 +92,27 @@ export default function Dashboard(): ReactElement {
       <WelcomeCard name={name || "User"} email={email || "..."} />
 
       <div className="mb-4">
-        <Button onClick={() => setShowEditor(!showEditor)}>
+        <Button
+          onClick={() => {
+            setShowEditor(!showEditor);
+            setEditingNote(null);
+          }}
+        >
           {showEditor ? "Cancel" : "Create Note"}
         </Button>
       </div>
 
-      {showEditor && <NoteEditor onSubmit={handleAddNote} />}
+      {showEditor && (
+        <NoteEditor
+          onSubmit={handleAddOrUpdateNote}
+          onCancel={() => {
+            setShowEditor(false);
+            setEditingNote(null);
+          }}
+          editing={!!editingNote}
+          initialValue={editingNote?.content ?? ""}
+        />
+      )}
 
       <h3 className="text-md font-semibold mb-2">Notes</h3>
       {content}

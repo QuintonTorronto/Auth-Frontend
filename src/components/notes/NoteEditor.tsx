@@ -12,23 +12,29 @@ export default function NoteEditor({
   initialValue = "",
   editing = false,
   onCancel,
-}: Props) {
+}: Readonly<Props>) {
   const [content, setContent] = useState<string>(initialValue);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
+    setContent(initialValue);
     if (editing) {
-      setContent(initialValue);
       textareaRef.current?.focus();
     }
   }, [initialValue, editing]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (content.trim()) {
-      onSubmit(content.trim());
-      setContent("");
-    }
+    const trimmed = content.trim();
+    if (!trimmed) return;
+
+    onSubmit(trimmed);
+    if (!editing) setContent("");
+  };
+
+  const handleCancel = () => {
+    setContent(initialValue);
+    onCancel?.();
   };
 
   return (
@@ -47,7 +53,7 @@ export default function NoteEditor({
         {editing && (
           <button
             type="button"
-            onClick={onCancel}
+            onClick={handleCancel}
             className="text-sm text-gray-500 hover:underline"
           >
             Cancel
