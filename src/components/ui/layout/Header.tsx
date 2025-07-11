@@ -12,7 +12,7 @@ export default function Header() {
 
   const handleLogout = async () => {
     try {
-      await api.post("/auth/logout"); // responds with 200 + { message }
+      await api.post("/auth/logout");
     } catch (err) {
       console.warn("Logout request failed", err);
     } finally {

@@ -8,7 +8,6 @@ import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
-import jwt_decode from "jwt-decode";
 import banner from "../assets/Banner.jpg";
 import Logo from "../assets/logo-HD.svg?react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
@@ -73,7 +72,6 @@ export default function Login() {
     (state) => state.setRequiresProfileCompletion
   );
 
-  // --- OTP FLOW ---
   const onOtpRequest = async () => {
     const email = watchOtp("email");
     if (!email) return toast.error("Enter your email first");
@@ -97,7 +95,7 @@ export default function Login() {
     try {
       await api.post("/auth/send-otp-login", { email });
       toast.info("OTP resent to email");
-      setResendCooldown(30); // reset cooldown
+      setResendCooldown(30); // reset function for otp.
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Resend failed");
     }
@@ -117,7 +115,6 @@ export default function Login() {
     }
   };
 
-  // --- PASSWORD FLOW ---
   const onPwdSubmit = async (data: any) => {
     try {
       const res = await api.post("/auth/login", data, {
@@ -186,9 +183,9 @@ export default function Login() {
           document.getElementById("google-signin-button"),
           { theme: "outline", size: "large", width: "300" }
         );
-        clearInterval(interval); // prevent re-initialization
+        clearInterval(interval); // this prevents re-initialization.
       }
-    }, 100); // check every 100ms
+    }, 100);
 
     return () => clearInterval(interval);
   }, []);
@@ -199,7 +196,7 @@ export default function Login() {
         <Logo className="h-10 w-auto" />
       </div>
       <div className="flex flex-col bg-gray-50 md:flex-row mt-5 overflow-hidden">
-        {/* Left: Login Form (scrollable) */}
+        {/* Login Form (*/}
         <div className="w-full md:w-1/2 overflow-y-auto px-4 py-10 bg-gray-50 flex justify-center items-center">
           <div className="w-full max-w-md bg-white shadow-lg rounded-2xl p-6 sm:p-8">
             <h1 className="text-2xl font-semibold mb-2 text-gray-800">
@@ -209,7 +206,6 @@ export default function Login() {
               Please login to continue to your account.
             </h2>
 
-            {/* OTP Login */}
             {method === "otp" && (
               <form
                 onSubmit={handleOtpSubmit(onOtpSubmit)}
@@ -270,7 +266,7 @@ export default function Login() {
               </form>
             )}
 
-            {/* Password Login */}
+            {/* Password Login Section */}
             {method === "password" && (
               <form
                 onSubmit={handlePwdSubmit(onPwdSubmit)}
@@ -328,7 +324,7 @@ export default function Login() {
               </form>
             )}
 
-            {/* Google Sign In */}
+            {/* Google Sign In Button */}
             <div className="my-4 px-4 py-2">
               <div className="w-full flex justify-center">
                 <div id="google-signin-button" />
@@ -347,7 +343,7 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Right: Banner for Desktop */}
+        {/* Banner for Desktop */}
         <div className="hidden md:block md:w-1/2 fixed right-0 top-0 h-screen z-0">
           <img
             src={banner}

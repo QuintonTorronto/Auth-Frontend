@@ -24,9 +24,8 @@ export default function ForgotPassword() {
     try {
       await api.post("/auth/forgot-password", data);
       toast.success("OTP sent to your email");
-      //Added Delay for user to see otp sent toast.
       setTimeout(() => {
-         navigate("/reset-password", { state: { email: data.email } });
+        navigate("/reset-password", { state: { email: data.email } });
       }, 100);
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to send OTP");

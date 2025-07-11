@@ -64,7 +64,7 @@ export default function Signup() {
     try {
       await api.post("/auth/signup", {
         ...data,
-        dob: data.dob.toISOString().split("T")[0], // format YYYY-MM-DD
+        dob: data.dob.toISOString().split("T")[0],
       });
       toast.success("OTP sent to your email!");
       setShowOtp(true);
@@ -109,7 +109,7 @@ export default function Signup() {
         <Logo className="h-10 w-auto" />
       </div>
       <div className="flex flex-col md:flex-row h-screen overflow-hidden">
-        {/* Left: Signup Form (scrollable) */}
+        {/* Signup Form */}
         <div className="w-full md:w-1/2 overflow-y-auto p-6 flex justify-center items-center bg-gray-50">
           <div className="w-full max-w-md md:max-w-sm bg-white rounded-2xl shadow-lg p-6 md:p-8">
             <h1 className="text-2xl font-semibold mb-2 text-gray-800">
@@ -119,14 +119,12 @@ export default function Signup() {
               Sign up to enjoy the feature of HD
             </h2>
             <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
-              {/* Name */}
               <Input
                 label="Name"
                 {...register("name")}
                 error={errors.name?.message}
               />
 
-              {/* DOB */}
               <div className="flex flex-col space-y-1">
                 <label className="text-sm font-medium text-gray-700">
                   Date of Birth
@@ -149,7 +147,6 @@ export default function Signup() {
                 )}
               </div>
 
-              {/* Email & Password */}
               <Input
                 label="Email"
                 type="email"
@@ -202,7 +199,6 @@ export default function Signup() {
                 </div>
               )}
 
-              {/* Button */}
               <Button type="submit" full onClick={handleCombinedSubmit}>
                 {showOtp ? "Sign Up" : "Get OTP"}
               </Button>
@@ -220,7 +216,7 @@ export default function Signup() {
           </div>
         </div>
 
-        {/* Right: Banner*/}
+        {/* Banner*/}
         <div className="hidden md:block md:w-1/2 fixed right-0 top-0 h-screen z-0">
           <img
             src={banner}

@@ -14,7 +14,7 @@ export default function Dashboard() {
   const [showEditor, setShowEditor] = useState(false);
 
   const { notes, fetchNotes, addNote, loading, error } = useNotes();
-  // Fetch user details on mount
+  // Fetching user details on mount
   useEffect(() => {
     const getUser = async () => {
       try {

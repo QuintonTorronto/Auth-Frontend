@@ -1,4 +1,3 @@
-// src/auth/useAuth.ts
 import { create } from "zustand";
 
 interface AuthState {
@@ -9,7 +8,6 @@ interface AuthState {
   setLoading: (val: boolean) => void;
   setRequiresProfileCompletion: (val: boolean) => void;
 }
-
 
 export const useAuth = create<AuthState>((set) => ({
   isAuthenticated: false,
