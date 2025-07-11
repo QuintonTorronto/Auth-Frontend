@@ -26,20 +26,26 @@ export default function CompleteProfile() {
     handleSubmit,
     setValue,
     formState: { errors },
-  } = useForm<ProfileData>({ resolver: zodResolver(profileSchema) });
+  } = useForm<ProfileData>({
+    resolver: zodResolver(profileSchema),
+  });
 
   useEffect(() => {
     api
       .get("/auth/me")
       .then((res) => {
         setValue("name", res.data.name || "");
-        if (res.data.dob) setDob(new Date(res.data.dob));
+        if (res.data.dob) {
+          const parsedDate = new Date(res.data.dob);
+          if (!isNaN(parsedDate.getTime())) setDob(parsedDate);
+        }
       })
       .catch(() => toast.error("Failed to fetch profile"));
   }, [setValue]);
 
   const onSubmit = async (data: ProfileData) => {
     try {
+      if (!dob) throw new Error("DOB missing");
       await api.post("/auth/complete-profile", {
         name: data.name,
         dob,
@@ -60,16 +66,15 @@ export default function CompleteProfile() {
             {...register("name")}
             error={errors.name?.message}
           />
-
           <div className="flex flex-col space-y-1">
             <label className="text-sm font-medium text-gray-700">
               Date of Birth
             </label>
             <DatePicker
               selected={dob}
-              onChange={(date) => {
+              onChange={(date: Date | null) => {
                 setDob(date);
-                setValue("dob", date);
+                setValue("dob", date ?? new Date());
               }}
               maxDate={new Date()}
               placeholderText="Select your date of birth"
@@ -82,7 +87,6 @@ export default function CompleteProfile() {
               <p className="text-red-500 text-sm">{errors.dob.message}</p>
             )}
           </div>
-
           <Button type="submit" full>
             Update Profile
           </Button>

@@ -13,6 +13,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import type { AxiosError } from "axios";
 
 export default function App() {
   const setAuthenticated = useAuth((state) => state.setAuthenticated);
@@ -20,6 +21,7 @@ export default function App() {
     (state) => state.setRequiresProfileCompletion
   );
   const setLoading = useAuth((state) => state.setLoading);
+
   useEffect(() => {
     const checkAuth = async () => {
       const timeout = setTimeout(() => {
@@ -33,19 +35,24 @@ export default function App() {
           {},
           { withCredentials: true }
         );
-        const { accessToken } = res.data;
 
-        localStorage.setItem("accessToken", accessToken);
-
-        setAuthenticated(true);
-
-        setRequiresProfileCompletion(
-          res.data.requiresProfileCompletion ?? false
-        );
+        const { accessToken, requiresProfileCompletion } = res.data ?? {};
+        if (accessToken) {
+          localStorage.setItem("accessToken", accessToken);
+          setAuthenticated(true);
+          setRequiresProfileCompletion(!!requiresProfileCompletion);
+        } else {
+          setAuthenticated(false);
+          setRequiresProfileCompletion(false);
+        }
       } catch (err) {
-        console.error("Refresh error:", err.response?.data || err.message);
+        const error = err as AxiosError<{ message?: string }>;
+        console.error(
+          "Refresh error:",
+          error.response?.data?.message || error.message
+        );
         setAuthenticated(false);
-        setRequiresProfileCompletion(false); // fallback if unauthenticated
+        setRequiresProfileCompletion(false);
       } finally {
         clearTimeout(timeout);
         setLoading(false);
@@ -53,7 +60,7 @@ export default function App() {
     };
 
     checkAuth();
-  }, []);
+  }, [setAuthenticated, setRequiresProfileCompletion, setLoading]);
 
   return (
     <>

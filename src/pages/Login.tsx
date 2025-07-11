@@ -9,16 +9,27 @@ import Button from "../components/ui/Button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import banner from "../assets/Banner.jpg";
-import Logo from "../assets/logo-HD.svg?react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
 declare global {
   interface Window {
-    google: any;
+    google?: {
+      accounts?: {
+        id: {
+          initialize: (options: {
+            client_id: string;
+            callback: (response: { credential: string }) => void;
+          }) => void;
+          renderButton: (
+            element: HTMLElement | null,
+            options: { theme: string; size: string; width: string }
+          ) => void;
+        };
+      };
+    };
   }
 }
 
-// Schemas
 const otpSchema = z.object({
   email: z.string().email("Invalid email"),
   otp: z.string().length(6, "OTP must be 6 digits"),
@@ -29,6 +40,9 @@ const passwordSchema = z.object({
   password: z.string().min(6, "Password too short"),
 });
 
+type OtpForm = z.infer<typeof otpSchema>;
+type PasswordForm = z.infer<typeof passwordSchema>;
+
 export default function Login() {
   const [method, setMethod] = useState<"otp" | "password">("otp");
   const [showOtpField, setShowOtpField] = useState(false);
@@ -36,13 +50,19 @@ export default function Login() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
 
+  const navigate = useNavigate();
+  const setAuthenticated = useAuth((s) => s.setAuthenticated);
+  const setRequiresProfileCompletion = useAuth(
+    (s) => s.setRequiresProfileCompletion
+  );
+
   const {
     register: registerOtp,
     handleSubmit: handleOtpSubmit,
     setValue: setOtpValue,
     watch: watchOtp,
     formState: { errors: otpErrors },
-  } = useForm({
+  } = useForm<OtpForm>({
     resolver: zodResolver(otpSchema),
     defaultValues: { email: emailValue },
   });
@@ -52,25 +72,20 @@ export default function Login() {
     handleSubmit: handlePwdSubmit,
     setValue: setPwdValue,
     formState: { errors: pwdErrors },
-  } = useForm({
+  } = useForm<PasswordForm>({
     resolver: zodResolver(passwordSchema),
     defaultValues: { email: emailValue },
   });
 
   useEffect(() => {
     if (resendCooldown > 0) {
-      const timer = setTimeout(() => {
-        setResendCooldown(resendCooldown - 1);
-      }, 1000);
+      const timer = setTimeout(
+        () => setResendCooldown((prev) => prev - 1),
+        1000
+      );
       return () => clearTimeout(timer);
     }
   }, [resendCooldown]);
-
-  const navigate = useNavigate();
-  const setAuthenticated = useAuth((state) => state.setAuthenticated);
-  const setRequiresProfileCompletion = useAuth(
-    (state) => state.setRequiresProfileCompletion
-  );
 
   const onOtpRequest = async () => {
     const email = watchOtp("email");
@@ -84,52 +99,62 @@ export default function Login() {
       setOtpValue("email", email);
       setPwdValue("email", email);
       toast.success("OTP sent to email");
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to send OTP");
+    } catch (err: unknown) {
+      const message =
+        (err as any)?.response?.data?.message || "Failed to send OTP";
+      toast.error(message);
     }
   };
 
   const onResendOtp = async () => {
-    if (resendCooldown > 0) return;
     const email = watchOtp("email");
+    if (resendCooldown > 0 || !email) return;
+
     try {
       await api.post("/auth/send-otp-login", { email });
       toast.info("OTP resent to email");
-      setResendCooldown(30); // reset function for otp.
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Resend failed");
+      setResendCooldown(30);
+    } catch (err: unknown) {
+      const message = (err as any)?.response?.data?.message || "Resend failed";
+      toast.error(message);
     }
   };
 
-  const onOtpSubmit = async (data: any) => {
+  const onOtpSubmit = async (data: OtpForm) => {
     try {
       const res = await api.post("/auth/verify-otp-login", data, {
         withCredentials: true,
       });
-      toast.success("Login successful!");
-      localStorage.setItem("accessToken", res.data.accessToken);
+
+      const { accessToken } = res.data;
+      localStorage.setItem("accessToken", accessToken);
       setAuthenticated(true);
-      setTimeout(() => navigate("/dashboard"), 100);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "OTP login failed");
+      navigate("/dashboard");
+      toast.success("Login successful!");
+    } catch (err: unknown) {
+      const message =
+        (err as any)?.response?.data?.message || "OTP login failed";
+      toast.error(message);
     }
   };
 
-  const onPwdSubmit = async (data: any) => {
+  const onPwdSubmit = async (data: PasswordForm) => {
     try {
       const res = await api.post("/auth/login", data, {
         withCredentials: true,
       });
-      toast.success("Login successful!");
-      localStorage.setItem("accessToken", res.data.accessToken);
+
+      const { accessToken } = res.data;
+      localStorage.setItem("accessToken", accessToken);
       setAuthenticated(true);
-      setTimeout(() => navigate("/dashboard"), 100);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Login failed");
+      navigate("/dashboard");
+      toast.success("Login successful!");
+    } catch (err: unknown) {
+      const message = (err as any)?.response?.data?.message || "Login failed";
+      toast.error(message);
     }
   };
 
-  // --- Toggle ---
   const switchToPassword = () => {
     const currentEmail = watchOtp("email") || emailValue;
     setEmailValue(currentEmail);
@@ -151,39 +176,40 @@ export default function Login() {
         { credential },
         { withCredentials: true }
       );
+
       const { accessToken, requiresProfileCompletion } = res.data;
-
       localStorage.setItem("accessToken", accessToken);
-
       setAuthenticated(true);
       setRequiresProfileCompletion(requiresProfileCompletion);
 
-      if (requiresProfileCompletion) {
-        localStorage.setItem("accessToken", accessToken);
-        navigate("/complete-profile");
-      } else {
-        navigate("/dashboard");
-      }
-
+      navigate(requiresProfileCompletion ? "/complete-profile" : "/dashboard");
       toast.success("Google sign-in successful");
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Google login failed");
+    } catch (err: unknown) {
+      const message =
+        (err as any)?.response?.data?.message || "Google login failed";
+      toast.error(message);
     }
   };
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (window.google && window.google.accounts?.id) {
-        window.google.accounts.id.initialize({
-          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID!,
-          callback: (res: any) => handleGoogleCredential(res.credential),
+      const googleId = window.google?.accounts?.id;
+      if (googleId) {
+        googleId.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "",
+          callback: (res: { credential: string }) =>
+            handleGoogleCredential(res.credential),
         });
 
-        window.google.accounts.id.renderButton(
-          document.getElementById("google-signin-button"),
-          { theme: "outline", size: "large", width: "300" }
-        );
-        clearInterval(interval); // this prevents re-initialization.
+        const el = document.getElementById("google-signin-button");
+        if (el) {
+          googleId.renderButton(el, {
+            theme: "outline",
+            size: "large",
+            width: "300",
+          });
+          clearInterval(interval);
+        }
       }
     }, 100);
 
@@ -193,7 +219,7 @@ export default function Login() {
   return (
     <div className="h-screen bg-gray-50">
       <div className="flex justify-center md:justify-start px-4 pt-6 md:px-10 md:pt-4">
-        <Logo className="h-10 w-auto" />
+        <img src="/logo-HD.svg" alt="Logo" className="h-10 w-auto" />
       </div>
       <div className="flex flex-col bg-gray-50 md:flex-row mt-5 overflow-hidden">
         {/* Login Form (*/}

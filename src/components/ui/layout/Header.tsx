@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../auth/useAuth";
 import api from "../../../api/axios";
-import Logo from "../../../assets/logo.svg?react";
 
 export default function Header() {
   const navigate = useNavigate();
@@ -24,14 +23,11 @@ export default function Header() {
   };
 
   return (
-    <header className="flex justify-between items-center px-4 py-3 mb-6 bg-white ">
-      <Logo
-        className="h-6 w-6 mr-2 text-blue-600"
-        onClick={() => navigate("/dashboard")}
-      />
+    <header className="flex justify-between items-center px-4 py-3 mb-6 bg-white">
+      <img src="/Onlylogo.svg" alt="Logo" className="h-6 w-6 mr-2" />
       <button
         onClick={() => navigate("/dashboard")}
-        className="text-xl font-semibold text-gray-800 "
+        className="text-xl font-semibold text-gray-800"
       >
         Dashboard
       </button>

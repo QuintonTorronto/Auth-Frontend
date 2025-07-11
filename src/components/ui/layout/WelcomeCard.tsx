@@ -9,7 +9,7 @@ export default function WelcomeCard({ name, email }: Props) {
       <h2 className="text-2xl font-semibold text-gray-800 mb-1">
         Welcome, {name || "User"}!
       </h2>
-      <p className="text-sm  text-gray-600">Email: {email || "..."}</p>
+      <p className="text-sm text-gray-600">Email: {email || "..."}</p>
     </div>
   );
 }

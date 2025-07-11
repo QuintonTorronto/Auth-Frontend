@@ -16,9 +16,10 @@ export default function ForgotPassword() {
     handleSubmit,
     formState: { errors },
   } = useForm<FormValues>();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const navigate = useNavigate();
+
   const onSubmit = async (data: FormValues) => {
     setLoading(true);
     try {

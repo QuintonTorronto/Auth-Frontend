@@ -13,8 +13,8 @@ export default function NoteEditor({
   editing = false,
   onCancel,
 }: Props) {
-  const [content, setContent] = useState(initialValue);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [content, setContent] = useState<string>(initialValue);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     if (editing) {
@@ -23,7 +23,7 @@ export default function NoteEditor({
     }
   }, [initialValue, editing]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (content.trim()) {
       onSubmit(content.trim());

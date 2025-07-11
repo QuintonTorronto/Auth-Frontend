@@ -11,10 +11,9 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useNavigate } from "react-router-dom";
 import banner from "../assets/Banner.jpg";
-import Logo from "../assets/logo-HD.svg?react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
-// Zod Schema for Signup
+// Schema: Signup
 const signupSchema = z.object({
   name: z.string().min(2, "Name is too short"),
   email: z.string().email("Invalid email"),
@@ -24,9 +23,9 @@ const signupSchema = z.object({
 
 type SignupData = z.infer<typeof signupSchema>;
 
-// Zod Schema for OTP
+// Schema: OTP
 const otpSchema = z.object({
-  otp: z.string().min(6, "OTP must be 6 digits").max(6, "OTP must be 6 digits"),
+  otp: z.string().length(6, "OTP must be 6 digits"),
 });
 
 type OtpData = z.infer<typeof otpSchema>;
@@ -45,9 +44,7 @@ export default function Signup() {
     watch,
   } = useForm<SignupData>({
     resolver: zodResolver(signupSchema),
-    defaultValues: {
-      dob: undefined,
-    },
+    defaultValues: { dob: undefined },
   });
 
   const {
@@ -68,8 +65,9 @@ export default function Signup() {
       });
       toast.success("OTP sent to your email!");
       setShowOtp(true);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Signup failed");
+    } catch (err: unknown) {
+      const message = (err as any)?.response?.data?.message || "Signup failed";
+      toast.error(message);
     }
   };
 
@@ -81,8 +79,10 @@ export default function Signup() {
       });
       toast.success("Account created successfully!");
       navigate("/login");
-    } catch (err: any) {
-      toast.error("Invalid or expired OTP");
+    } catch (err: unknown) {
+      toast.error(
+        (err as any)?.response?.data?.message || "Invalid or expired OTP"
+      );
     }
   };
 
@@ -90,12 +90,14 @@ export default function Signup() {
     try {
       await api.post("/auth/resend-otp", { email: getValues("email") });
       toast.info("OTP resent to your email.");
-    } catch (err: any) {
-      toast.error("Failed to resend OTP");
+    } catch (err: unknown) {
+      toast.error(
+        (err as any)?.response?.data?.message || "Failed to resend OTP"
+      );
     }
   };
 
-  const handleCombinedSubmit = async () => {
+  const handleCombinedSubmit = () => {
     if (!showOtp) {
       handleSubmit(onGetOtp)();
     } else {
@@ -106,8 +108,9 @@ export default function Signup() {
   return (
     <div className="h-screen bg-gray-50">
       <div className="flex justify-center md:justify-start px-4 pt-6 md:px-10 md:pt-4">
-        <Logo className="h-10 w-auto" />
+        <img src="/logo-HD.svg" alt="Logo" className="h-10 w-auto" />
       </div>
+
       <div className="flex flex-col md:flex-row h-screen overflow-hidden">
         {/* Signup Form */}
         <div className="w-full md:w-1/2 overflow-y-auto p-6 flex justify-center items-center bg-gray-50">
@@ -118,6 +121,7 @@ export default function Signup() {
             <h2 className="text-xs font-normal mb-6 text-gray-600">
               Sign up to enjoy the feature of HD
             </h2>
+
             <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
               <Input
                 label="Name"
@@ -131,9 +135,9 @@ export default function Signup() {
                 </label>
                 <DatePicker
                   selected={dob}
-                  onChange={(date: Date | null) =>
-                    setValue("dob", date as Date)
-                  }
+                  onChange={(date: Date | null) => {
+                    if (date) setValue("dob", date);
+                  }}
                   dateFormat="dd MMMM yyyy"
                   maxDate={new Date()}
                   showYearDropdown
@@ -153,6 +157,7 @@ export default function Signup() {
                 {...register("email")}
                 error={errors.email?.message}
               />
+
               <div className="relative">
                 <Input
                   label="Password"
@@ -169,6 +174,7 @@ export default function Signup() {
                   {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
                 </button>
               </div>
+
               {/* OTP Section */}
               {showOtp && (
                 <div>
@@ -216,7 +222,7 @@ export default function Signup() {
           </div>
         </div>
 
-        {/* Banner*/}
+        {/* Banner */}
         <div className="hidden md:block md:w-1/2 fixed right-0 top-0 h-screen z-0">
           <img
             src={banner}

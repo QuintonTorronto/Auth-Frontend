@@ -8,13 +8,14 @@ import { toast } from "react-toastify";
 import api from "../api/axios";
 import Header from "../components/ui/layout/Header";
 import WelcomeCard from "../components/ui/layout/WelcomeCard";
+import type { Note } from "../types/note";
 
 export default function Dashboard() {
   const { name, email, setUser } = useUser();
   const [showEditor, setShowEditor] = useState(false);
 
   const { notes, fetchNotes, addNote, loading, error } = useNotes();
-  // Fetching user details on mount
+
   useEffect(() => {
     const getUser = async () => {
       try {
@@ -34,7 +35,15 @@ export default function Dashboard() {
     setShowEditor(false);
   };
 
-  let content: any;
+  const handleEditNote = (note: Note) => {
+    toast.info(`Editing note: ${note.content}`);
+  };
+
+  const handleDeleteNote = (id: string) => {
+    toast.info(`Deleting note: ${id}`);
+  };
+
+  let content: JSX.Element;
 
   if (loading) {
     content = (
@@ -50,7 +59,12 @@ export default function Dashboard() {
     content = (
       <div className="space-y-4">
         {notes.map((note) => (
-          <NoteCard key={note._id} note={note} />
+          <NoteCard
+            key={note._id}
+            note={note}
+            onEdit={handleEditNote}
+            onDelete={handleDeleteNote}
+          />
         ))}
       </div>
     );
@@ -61,17 +75,14 @@ export default function Dashboard() {
       <Header />
       <WelcomeCard name={name || "User"} email={email || "..."} />
 
-      {/* Create Note Button */}
       <div className="mb-4">
         <Button onClick={() => setShowEditor(!showEditor)}>
           {showEditor ? "Cancel" : "Create Note"}
         </Button>
       </div>
 
-      {/* Note Editor */}
       {showEditor && <NoteEditor onSubmit={handleAddNote} />}
 
-      {/* Notes */}
       <h3 className="text-md font-semibold mb-2">Notes</h3>
       {content}
     </div>
