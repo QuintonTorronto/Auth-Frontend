@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useUser } from "../auth/useUser";
 import Button from "../components/ui/Button";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
 import NoteEditor from "../components/notes/NoteEditor";
 import { useNotes } from "../store/useNotes";
 import NoteCard from "../components/notes/NoteCard";
@@ -15,6 +16,8 @@ export default function Dashboard(): ReactElement {
   const { name, email, setUser } = useUser();
   const [showEditor, setShowEditor] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<Note | null>(null); // ✅ fixed type
   const { notes, fetchNotes, addNote, updateNote, deleteNote, loading, error } =
     useNotes();
 
@@ -51,12 +54,18 @@ export default function Dashboard(): ReactElement {
     setShowEditor(true);
   };
 
-  const handleDeleteNote = async (id: string) => {
-    const confirmDelete = confirm("Are you sure you want to delete this note?");
-    if (confirmDelete) {
-      await deleteNote(id);
+  const handleDeleteNote = (note: Note) => {
+    setNoteToDelete(note);
+    setConfirmVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    if (noteToDelete) {
+      await deleteNote(noteToDelete._id);
       toast.success("Note deleted");
     }
+    setConfirmVisible(false);
+    setNoteToDelete(null);
   };
 
   let content: ReactElement;
@@ -79,7 +88,7 @@ export default function Dashboard(): ReactElement {
             key={note._id}
             note={note}
             onEdit={handleEditNote}
-            onDelete={handleDeleteNote}
+            onDelete={() => handleDeleteNote(note)}
           />
         ))}
       </div>
@@ -116,6 +125,17 @@ export default function Dashboard(): ReactElement {
 
       <h3 className="text-md font-semibold mb-2">Notes</h3>
       {content}
+
+      {confirmVisible && (
+        <ConfirmDialog
+          message="Are you sure you want to delete this note?"
+          onConfirm={confirmDelete}
+          onCancel={() => {
+            setConfirmVisible(false);
+            setNoteToDelete(null);
+          }}
+        />
+      )}
     </div>
   );
 }
