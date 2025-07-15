@@ -17,7 +17,7 @@ export default function Dashboard(): ReactElement {
   const [showEditor, setShowEditor] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [confirmVisible, setConfirmVisible] = useState(false);
-  const [noteToDelete, setNoteToDelete] = useState<Note | null>(null); // ✅ fixed type
+  const [noteToDelete, setNoteToDelete] = useState<Note | null>(null); 
   const { notes, fetchNotes, addNote, updateNote, deleteNote, loading, error } =
     useNotes();
 

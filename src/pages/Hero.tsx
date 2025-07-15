@@ -7,7 +7,7 @@ export default function Hero() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white text-gray-800 px-4 py-12 flex flex-col items-center">
       <h1 className="text-4xl sm:text-5xl font-extrabold text-center mb-4 tracking-tight">
-        Welcome, <span className="text-blue-600">Highway Delite</span> Team
+        Welcome, <span className="text-blue-600">Recruitment</span> Team
       </h1>
       <p className="text-lg text-center text-gray-600 max-w-2xl mb-10">
         Explore a production-ready, full-stack application built with secure
